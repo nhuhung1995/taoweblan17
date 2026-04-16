@@ -173,6 +173,29 @@ export const ADDRESS_DETAIL_BY_CODE = {
   }
 };
 
+export const BUILDINGS_BY_LOCATION = {
+  "11203061002|17|5": [
+    { buldngId: "BLDG-11203061002-17-5-A", buldngNm: "並木ハイツ", buldngKana: "ナミキハイツ" },
+    { buldngId: "BLDG-11203061002-17-5-B", buldngNm: "グリーン並木", buldngKana: "グリーンナミキ" }
+  ],
+  "11203061002|17|6": [
+    { buldngId: "BLDG-11203061002-17-6-A", buldngNm: "並木レジデンス", buldngKana: "ナミキレジデンス" }
+  ],
+  "11203061002|17|12": [
+    { buldngId: "BLDG-11203061002-17-12-A", buldngNm: "シティ並木12", buldngKana: "シティナミキ12" }
+  ],
+  "11203061002|17|14": [
+    { buldngId: "BLDG-11203061002-17-14-A", buldngNm: "並木ガーデン", buldngKana: "ナミキガーデン" }
+  ],
+  "11203061002|17|16": [
+    { buldngId: "BLDG-11203061002-17-16-A", buldngNm: "メゾン並木", buldngKana: "メゾンナミキ" }
+  ],
+  "11203061002|17|17": [
+    { buldngId: "BLDG-11203061002-17-17-A", buldngNm: "並木タワー", buldngKana: "ナミキタワー" },
+    { buldngId: "BLDG-11203061002-17-17-B", buldngNm: "コーポ17", buldngKana: "コーポ17" }
+  ]
+};
+
 export function validateRequired(input, keys) {
   const missing = keys.filter((k) => input?.[k] === undefined || input?.[k] === null || input?.[k] === "");
   if (missing.length) {
