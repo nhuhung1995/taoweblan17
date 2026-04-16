@@ -157,12 +157,6 @@
             <select id="goSelect"></select>
           </div>
         </div>
-        <div class="row" id="fullAddressWrap" style="display:none;">
-          <div class="field">
-            <label>Full Address</label>
-            <input id="fullAddressText" readonly />
-          </div>
-        </div>
         <div class="row" id="buildingSelectWrap" style="display:none;">
           <div class="field">
             <label>Building</label>
@@ -172,6 +166,12 @@
         <div class="row" id="buildingFailWrap" style="display:none;">
           <div class="field">
             <p><span class="pill err">fail</span> Building lookup failed or empty.</p>
+          </div>
+        </div>
+        <div class="row" id="fullAddressWrap" style="display:none;">
+          <div class="field">
+            <label>Full Address</label>
+            <input id="fullAddressText" readonly />
           </div>
         </div>
       </section>
@@ -415,7 +415,7 @@
         const address1 = state.selectedAddress?.full || "";
         const banchi = state.selectedBanchi?.value || "";
         const go = state.selectedGo || "";
-        const text = [address1, banchi, go].filter(Boolean).join("");
+        const text = [address1, banchi, go].filter(Boolean).join(" - ");
         if (!text) {
           wrap.style.display = "none";
           input.value = "";
