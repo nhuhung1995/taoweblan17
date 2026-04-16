@@ -36,9 +36,10 @@ Neu payload sai schema hoac thieu key, backend chan ngay o tung tang.
 - Thuc te test:
   - Thieu key -> `"必要なキーがありません"`
   - Sai enum -> `E00010`
-  - Theo flow SB frontend, endpoint nay duoc goi lap lai theo cap:
-    - `addressKbn=2` de lay list sau khi co zip/chome
-    - `addressKbn=3` de di sau hon ra banchi/go
+- Theo flow SB frontend, endpoint nay duoc goi lap lai theo cap:
+  - `addressKbn=2` de lay list sau khi co zip/chome
+  - `addressKbn=3` de di sau hon ra banchi/go
+  - Test truc tiep ben ngoai session UI co the gap `ASB0143` (yeu cau context noi bo cua ho), vi vay ban clone can snapshot du lieu de dam bao he thong van chay.
 
 ### C. Detail address search (BFF)
 

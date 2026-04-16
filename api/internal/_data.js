@@ -1,5 +1,15 @@
 export const SNAPSHOT_VERSION = "2026-04-17";
 
+const banchiList11203061002 = Array.from({ length: 30 }, (_, i) => {
+  const num = String(i + 1);
+  return { value: num, go: ["1"] };
+});
+
+const idx17 = banchiList11203061002.findIndex((x) => x.value === "17");
+if (idx17 >= 0) {
+  banchiList11203061002[idx17] = { value: "17", go: ["5", "6", "12", "14", "16", "17"] };
+}
+
 export const SESSION_FIXTURE = {
   agencyProperty: {
     sbmOrdcstmCd: "BBABELL94",
@@ -47,6 +57,19 @@ export const ADDRESS_BY_ZIP = {
       streetInfoList: [
         { addNbrKanjiNm: "１丁目", addressCd: "13113001001" },
         { addNbrKanjiNm: "２丁目", addressCd: "13113001002" }
+      ]
+    }
+  ],
+  "3320034": [
+    {
+      longNm: "埼玉県",
+      cityKanjiNm: "川口市",
+      streetKanjiNm: "並木",
+      streetInfoList: [
+        { addNbrKanjiNm: "１丁目", addressCd: "11203061001" },
+        { addNbrKanjiNm: "２丁目", addressCd: "11203061002" },
+        { addNbrKanjiNm: "３丁目", addressCd: "11203061003" },
+        { addNbrKanjiNm: "４丁目", addressCd: "11203061004" }
       ]
     }
   ],
@@ -127,10 +150,7 @@ export const ADDRESS_DETAIL_BY_CODE = {
   "11203061002": {
     latitude: 35.8148,
     longitude: 139.7081,
-    banchi: [
-      { value: "20-1", go: ["101", "102"] },
-      { value: "20-2", go: ["201", "202"] }
-    ],
+    banchi: banchiList11203061002,
     available: true
   },
   "11203061003": {
