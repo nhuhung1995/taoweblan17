@@ -77,12 +77,13 @@ export const ADDRESS_BY_ZIP = {
     {
       longNm: "埼玉県",
       cityKanjiNm: "川口市",
-      streetKanjiNm: "並木",
+      streetKanjiNm: "西青木",
       streetInfoList: [
-        { addNbrKanjiNm: "１丁目", addressCd: "11203061001" },
-        { addNbrKanjiNm: "２丁目", addressCd: "11203061002" },
-        { addNbrKanjiNm: "３丁目", addressCd: "11203061003" },
-        { addNbrKanjiNm: "４丁目", addressCd: "11203061004" }
+        { addNbrKanjiNm: "１丁目", addressCd: "11203064001" },
+        { addNbrKanjiNm: "２丁目", addressCd: "11203064002" },
+        { addNbrKanjiNm: "３丁目", addressCd: "11203064003" },
+        { addNbrKanjiNm: "４丁目", addressCd: "11203064004" },
+        { addNbrKanjiNm: "５丁目", addressCd: "11203064005" }
       ]
     }
   ]
