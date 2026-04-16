@@ -18,36 +18,27 @@ Trang demo se cho test skeleton 4 buoc:
 3. Detail
 4. Availability (co retry fallback)
 
-## Da doi sang API that (phan dia chi)
+## Live-only den GOU (SB)
 
 - Session guard lay that tu endpoint SB:
   - `POST /aqw-api/composition/individualCd/decision`
 - Zipcode search lay that tu endpoint SB:
   - `GET /aqw-api/composition/search/address/{zip3}/{zip4}`
 
-Luu y:
+Luong dang chay:
 
-- Phan `Search Address` da khong con hardcode zip.
-- Cac buoc sau van la skeleton de mo phong flow.
+1. `search/address` (live)
+2. `detailAddressSearch requestKbn=1` -> banchi (live)
+3. `detailAddressSearch requestKbn=2` -> gou (live)
 
-Cap nhat moi:
+Chi tiet:
 
-- `banchi` va `gou` da lay live tu SB qua `detailAddressSearch`:
+- `banchi` va `gou` lay live tu SB qua `detailAddressSearch`:
   - `requestKbn=1` -> `addressBanchiList`
   - `requestKbn=2` -> `addressGoList`
-- Neu live fail thi tu dong fallback noi bo.
 - Tam thoi bo qua buoc ten toa nha, de flow chuan den `GOU`.
 
-## Che do su dung de tranh phu thuoc SB
+## Ghi chu
 
-- `Internal Snapshot` (mac dinh):
-  - Session + Search + Normalize + Detail + Availability deu chay tu API noi bo.
-  - Muc tieu: SB khoa thi he thong van chay.
-- `Live SB`:
-  - Chi dung session + zipcode search tu SB de doi chieu.
-  - Cac buoc sau van chay API noi bo de on dinh.
-
-## Ghi chu quan trong
-
-- Ban nay la "snapshot-compatible", khong the cam ket 100% dong bo mai mai voi he thong SB neu SB doi nghiep vu.
-- De giu do khop cao, can cap nhat fixture/snapshot dinh ky.
+- Ban nay da bo data source switch trong UI, mac dinh live den `GOU`.
+- Cac step normalize/detail/availability o duoi van la skeleton noi bo de test tiep flow.

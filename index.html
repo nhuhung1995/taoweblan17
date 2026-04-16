@@ -96,15 +96,6 @@
         <h1>Address Check Clone Skeleton</h1>
         <p>Flow: <strong>search -> banchi -> gou -> normalize -> detail -> availability</strong></p>
         <p><a href="./docs/softbank-address-check-flow.md">Open analysis doc</a></p>
-        <div class="row">
-          <div class="field">
-            <label>Data Source</label>
-            <select id="dataSource">
-              <option value="internal">Internal Snapshot (default)</option>
-              <option value="live">Live SB (session + zip only)</option>
-            </select>
-          </div>
-        </div>
       </section>
 
       <section class="card" id="sessionCard"></section>
@@ -177,7 +168,6 @@
     <script>
       const state = {
         session: null,
-        dataSource: "internal",
         selectedAddress: null,
         selectedBanchi: null,
         selectedGo: "",
@@ -197,18 +187,9 @@
       const api = {
         async searchAddress(zip) {
           if (!/^\d{7}$/.test(zip)) throw { code: "E00010", message: "zipcode invalid" };
-          const endpoint = state.dataSource === "live" ? "/api/sb/search-address" : "/api/internal/search-address";
-          let response = await fetch(`${endpoint}?zip=${zip}`);
-          let json = await response.json();
+          const response = await fetch(`/api/sb/search-address?zip=${zip}`);
+          const json = await response.json();
           if (!response.ok) throw json;
-
-          // Internal mode fallback: if snapshot has no rows for this zip, try live search.
-          if (state.dataSource === "internal" && (!json.addresses || json.addresses.length === 0)) {
-            response = await fetch(`/api/sb/search-address?zip=${zip}`);
-            json = await response.json();
-            if (!response.ok) throw json;
-            json._fallbackFrom = "live";
-          }
 
           const flattened = [];
           (json.addresses || []).forEach((a) => {
@@ -224,7 +205,7 @@
               });
             });
           });
-          return { addresses: flattened, fallbackFrom: json._fallbackFrom || null };
+          return { addresses: flattened };
         },
         async normalizeAddress(payload) {
           await sleep(120);
@@ -233,12 +214,6 @@
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload)
           });
-          const json = await response.json();
-          if (!response.ok) throw json;
-          return json;
-        },
-        async banchiByAddressCode(addressCode) {
-          const response = await fetch(`/api/internal/banchi?addressCode=${addressCode}`);
           const json = await response.json();
           if (!response.ok) throw json;
           return json;
@@ -290,8 +265,7 @@
           return;
         }
         card.innerHTML = `<h2>Session Guard</h2><p><span class="pill warn">loading</span> Creating session from SB endpoint...</p>`;
-        const sessionEndpoint = state.dataSource === "live" ? "/api/sb/session" : "/api/internal/session";
-        fetch(sessionEndpoint, {
+        fetch("/api/sb/session", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ individualCode })
@@ -311,7 +285,7 @@
             document.getElementById("flowCard").style.display = "block";
             card.innerHTML = `
               <h2>Session Guard</h2>
-              <p><span class="pill ok">active</span> individualCode + uuid initialized by ${state.dataSource === "live" ? "SB API" : "Internal Snapshot"}.</p>
+              <p><span class="pill ok">active</span> individualCode + uuid initialized by SB API.</p>
               <p><strong>individualCode:</strong> ${state.session.individualCode}</p>
               <p><strong>uuid:</strong> ${state.session.uuid}</p>
             `;
@@ -402,30 +376,19 @@
         if (!state.selectedAddress || !state.selectedAddress.addressCode) return;
         const individualCode = state.session?.individualCode;
         if (!individualCode) throw { code: "E_PRECHECK", message: "session not initialized" };
-
-        try {
-          const live = await api.sbDetailAddress({
-            individualCode,
-            requestKbn: "1",
-            addressCode: state.selectedAddress.addressCode,
-            choume: state.selectedAddress.chome
-          });
-          state.banchiResult = {
-            source: "live",
-            addressCode: state.selectedAddress.addressCode,
-            banchiCandidates: live.addressBanchiList || []
-          };
-          renderBanchiList(state.banchiResult.banchiCandidates || []);
-          log("Step1.5 banchiByAddressCode (live)", state.banchiResult);
-          return;
-        } catch (err) {
-          log("WARN", { message: "live banchi failed, fallback internal", err });
-        }
-
-        state.banchiResult = await api.banchiByAddressCode(state.selectedAddress.addressCode);
-        state.banchiResult.source = "internal";
+        const live = await api.sbDetailAddress({
+          individualCode,
+          requestKbn: "1",
+          addressCode: state.selectedAddress.addressCode,
+          choume: state.selectedAddress.chome
+        });
+        state.banchiResult = {
+          source: "live",
+          addressCode: state.selectedAddress.addressCode,
+          banchiCandidates: live.addressBanchiList || []
+        };
         renderBanchiList(state.banchiResult.banchiCandidates || []);
-        log("Step1.5 banchiByAddressCode (internal)", state.banchiResult);
+        log("Step1.5 banchiByAddressCode (live)", state.banchiResult);
       }
 
       async function loadGoFromSelectedBanchi() {
@@ -433,25 +396,15 @@
         const individualCode = state.session?.individualCode;
         if (!individualCode) throw { code: "E_PRECHECK", message: "session not initialized" };
 
-        let goCandidates = [];
-        try {
-          const live = await api.sbDetailAddress({
-            individualCode,
-            requestKbn: "2",
-            addressCode: state.selectedAddress.addressCode,
-            choume: state.selectedAddress.chome,
-            banchi: state.selectedBanchi.value
-          });
-          goCandidates = live.addressGoList || [];
-          log("Step1.55 goByBanchi (live)", { banchi: state.selectedBanchi.value, goCandidates });
-        } catch (err) {
-          log("WARN", { message: "live go failed, fallback internal", err });
-          const internal = await api.banchiByAddressCode(state.selectedAddress.addressCode);
-          const found = (internal.banchiCandidates || []).find((x) => (typeof x === "string" ? x : x.value) === state.selectedBanchi.value);
-          goCandidates = found ? (typeof found === "string" ? [] : found.go || []) : [];
-          log("Step1.55 goByBanchi (internal)", { banchi: state.selectedBanchi.value, goCandidates });
-        }
-
+        const live = await api.sbDetailAddress({
+          individualCode,
+          requestKbn: "2",
+          addressCode: state.selectedAddress.addressCode,
+          choume: state.selectedAddress.chome,
+          banchi: state.selectedBanchi.value
+        });
+        const goCandidates = live.addressGoList || [];
+        log("Step1.55 goByBanchi (live)", { banchi: state.selectedBanchi.value, goCandidates });
         renderGoSelect(goCandidates);
       }
 
@@ -461,9 +414,6 @@
         renderAddressList(state.searchResult.addresses);
         log("Step1 searchAddress", state.searchResult);
         await loadBanchiFromSelected();
-        if (state.searchResult.fallbackFrom === "live") {
-          log("INFO", { message: "Internal snapshot has no data for this zip, used Live SB fallback for search only." });
-        }
       }
 
       async function runNormalize() {
@@ -553,20 +503,6 @@
         state.selectedBanchi = value ? { value } : null;
         safeRun(loadGoFromSelectedBanchi);
       });
-      document.getElementById("dataSource").addEventListener("change", (e) => {
-        state.dataSource = e.target.value;
-        state.session = null;
-        state.selectedAddress = null;
-        state.selectedBanchi = null;
-        state.selectedGo = "";
-        document.getElementById("flowCard").style.display = "none";
-        document.getElementById("chomeSelect").innerHTML = "";
-        document.getElementById("banchiSelect").innerHTML = "";
-        document.getElementById("goSelect").innerHTML = "";
-        log("Data source switched", { dataSource: state.dataSource });
-        renderSession();
-      });
-
       renderSession();
     </script>
   </body>
