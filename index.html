@@ -1,64 +1,339 @@
 <!doctype html>
-<html lang="en">
+<html lang="ja">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>taoweblan17</title>
+    <title>Address Check Clone Skeleton</title>
     <style>
       :root {
-        color-scheme: light;
+        --bg: #f3f6fb;
+        --card: #ffffff;
+        --line: #d8e2ef;
+        --text: #13253f;
+        --muted: #5f6f86;
+        --brand: #1565c0;
+        --ok: #107c41;
+        --warn: #9f5b00;
+        --err: #c21717;
       }
+      * { box-sizing: border-box; }
       body {
         margin: 0;
-        font-family: "Segoe UI", Arial, sans-serif;
-        background: linear-gradient(160deg, #f3f7fb 0%, #eef2f9 100%);
-        color: #0f172a;
+        background: linear-gradient(155deg, #f6f8fc 0%, #eaf0f9 100%);
+        color: var(--text);
+        font-family: "Segoe UI", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
       }
       .wrap {
-        max-width: 760px;
-        margin: 64px auto;
-        padding: 0 20px;
+        max-width: 980px;
+        margin: 30px auto 60px;
+        padding: 0 16px;
       }
       .card {
-        background: #ffffff;
-        border: 1px solid #dbe4f0;
+        background: var(--card);
+        border: 1px solid var(--line);
         border-radius: 14px;
-        padding: 28px;
-        box-shadow: 0 8px 30px rgba(19, 37, 63, 0.08);
+        padding: 18px;
+        margin-bottom: 14px;
+        box-shadow: 0 10px 28px rgba(20, 38, 66, 0.07);
       }
-      h1 {
-        margin: 0 0 12px;
-        font-size: 30px;
-      }
-      p {
-        margin: 0 0 16px;
-        line-height: 1.55;
-      }
-      a {
-        color: #1463c1;
-        text-decoration: none;
-        font-weight: 600;
-      }
-      a:hover {
-        text-decoration: underline;
-      }
-      .muted {
-        color: #475569;
+      h1 { margin: 0 0 10px; font-size: 28px; }
+      h2 { margin: 0 0 10px; font-size: 18px; }
+      p { margin: 6px 0; line-height: 1.45; }
+      .row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+      .field { min-width: 220px; flex: 1; }
+      label { display: block; font-size: 13px; margin-bottom: 6px; color: var(--muted); }
+      input, select, button {
+        width: 100%;
+        border: 1px solid #c9d7ea;
+        border-radius: 10px;
+        padding: 10px 12px;
         font-size: 14px;
       }
+      button {
+        cursor: pointer;
+        background: var(--brand);
+        border-color: var(--brand);
+        color: #fff;
+        font-weight: 600;
+      }
+      button.ghost {
+        background: #fff;
+        color: var(--brand);
+      }
+      .pill {
+        display: inline-block;
+        border-radius: 999px;
+        padding: 4px 10px;
+        font-size: 12px;
+        font-weight: 700;
+      }
+      .ok { background: #e8f8ef; color: var(--ok); }
+      .warn { background: #fff4e5; color: var(--warn); }
+      .err { background: #ffebeb; color: var(--err); }
+      .address-list label {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 10px;
+        margin-bottom: 8px;
+        cursor: pointer;
+      }
+      pre {
+        background: #0f1724;
+        color: #d5e6ff;
+        padding: 12px;
+        border-radius: 10px;
+        overflow: auto;
+        font-size: 12px;
+        max-height: 280px;
+      }
+      a { color: var(--brand); text-decoration: none; }
+      a:hover { text-decoration: underline; }
     </style>
   </head>
   <body>
     <main class="wrap">
       <section class="card">
-        <h1>taoweblan17</h1>
-        <p>Vercel deployment is now configured with a static entry page.</p>
-        <p>
-          SoftBank address-check analysis:
-          <a href="./docs/softbank-address-check-flow.md">open document</a>
-        </p>
-        <p class="muted">Last updated: 2026-04-16</p>
+        <h1>Address Check Clone Skeleton</h1>
+        <p>Flow: <strong>search -> normalize -> detail -> availability</strong></p>
+        <p><a href="./docs/softbank-address-check-flow.md">Open analysis doc</a></p>
+      </section>
+
+      <section class="card" id="sessionCard"></section>
+
+      <section class="card" id="flowCard" style="display:none;">
+        <h2>Step Input</h2>
+        <div class="row">
+          <div class="field">
+            <label>Zipcode (7 digits)</label>
+            <input id="zipCode" value="1050011" />
+          </div>
+          <div class="field">
+            <label>Building Kind</label>
+            <select id="buildingKind">
+              <option value="2">2 (valid)</option>
+              <option value="1">1 (invalid test)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>In Use Service Type</label>
+            <select id="inUseServiceType">
+              <option value="1">1</option>
+              <option value="2">2</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Housing Type</label>
+            <select id="housingType">
+              <option value="1">1 (戸建)</option>
+              <option value="2">2 (集合)</option>
+            </select>
+          </div>
+        </div>
+        <div class="row">
+          <div class="field"><button id="runSearch">1) Search Address</button></div>
+          <div class="field"><button id="runNormalize">2) Normalize</button></div>
+          <div class="field"><button id="runDetail">3) Detail</button></div>
+          <div class="field"><button id="runAvailability">4) Availability</button></div>
+        </div>
+        <div class="row">
+          <div class="field"><button class="ghost" id="runAll">Run Full Pipeline</button></div>
+        </div>
+        <div class="address-list" id="addressList"></div>
+      </section>
+
+      <section class="card">
+        <h2>Runtime Log</h2>
+        <pre id="logBox">Ready.</pre>
       </section>
     </main>
+
+    <script>
+      const state = {
+        session: null,
+        selectedAddress: null,
+        searchResult: null,
+        normalizeResult: null,
+        detailResult: null,
+        availabilityResult: null
+      };
+
+      const db = {
+        "1050011": [
+          { full: "東京都 港区 芝公園 1丁目", addressCode: "13103012001", lat: 35.6586, lon: 139.7454 },
+          { full: "東京都 港区 芝公園 2丁目", addressCode: "13103012002", lat: 35.6563, lon: 139.7481 }
+        ],
+        "1500001": [
+          { full: "東京都 渋谷区 神宮前 1丁目", addressCode: "13113001001", lat: 35.6719, lon: 139.7063 }
+        ]
+      };
+
+      const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+      const generate = () => crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2);
+      const log = (title, data) => {
+        const box = document.getElementById("logBox");
+        box.textContent = `${title}\n${JSON.stringify(data, null, 2)}\n\n` + box.textContent;
+      };
+
+      const api = {
+        async searchAddress(zip) {
+          await sleep(250);
+          if (!/^\d{7}$/.test(zip)) throw { code: "E00010", message: "zipcode invalid" };
+          return { addresses: db[zip] || [] };
+        },
+        async normalizeAddress(payload) {
+          await sleep(250);
+          ["buildingKind", "orderZip", "inUseServiceType"].forEach((k) => {
+            if (!payload[k]) throw { code: "E00001", message: `missing key: ${k}` };
+          });
+          if (!["2"].includes(payload.buildingKind)) throw { code: "E00010", message: "buildingKind invalid" };
+          if (!["1", "2"].includes(payload.inUseServiceType)) throw { code: "E00010", message: "inUseServiceType invalid" };
+          return {
+            areaFlg: "1",
+            orderNumber: "ORD-" + Date.now(),
+            orderAddress1: payload.orderAddress1 || "",
+            orderAddress2: payload.orderAddress2 || ""
+          };
+        },
+        async detailAddressSearch(payload) {
+          await sleep(250);
+          ["requestKbn", "latitude", "longitude", "addressCode"].forEach((k) => {
+            if (payload[k] === undefined || payload[k] === null || payload[k] === "") throw { code: "E00001", message: `missing key: ${k}` };
+          });
+          return { ...payload, detailResolved: true };
+        },
+        async serviceAreaCheck(payload) {
+          await sleep(250);
+          const place = payload?.reqServiceAreaAcquisition?.placeAddress;
+          if (!payload.businessType || !payload.channel || !place?.housingType || !place?.addressCode) {
+            throw { code: "E00001", message: "required key missing in serviceAreaCheck" };
+          }
+          if (payload.reqServiceAreaAcquisition.nttapiCollaborationResult === true && place.addressCode.endsWith("2")) {
+            throw { code: "NTT_TEMP_ERROR", message: "first call failed, retry with nttapiCollaborationResult=false" };
+          }
+          return {
+            available: place.addressCode.endsWith("1"),
+            planSuggestion: place.housingType === "1" ? "family" : "mansion",
+            checkedAddressCode: place.addressCode
+          };
+        }
+      };
+
+      function renderSession() {
+        const card = document.getElementById("sessionCard");
+        const q = new URLSearchParams(location.search);
+        const individualCode = q.get("individualCode");
+        if (!individualCode) {
+          card.innerHTML = `
+            <h2>Access Limited</h2>
+            <p><span class="pill err">blocked</span> Missing <code>individualCode</code> in URL.</p>
+            <p>Open with sample: <a href="?individualCode=demo-422sLcGAVUfqK">${location.origin}${location.pathname}?individualCode=demo-422sLcGAVUfqK</a></p>
+          `;
+          return;
+        }
+        state.session = { individualCode, uuid: generate(), token: generate() };
+        document.getElementById("flowCard").style.display = "block";
+        card.innerHTML = `
+          <h2>Session Guard</h2>
+          <p><span class="pill ok">active</span> individualCode + uuid initialized.</p>
+          <p><strong>individualCode:</strong> ${state.session.individualCode}</p>
+          <p><strong>uuid:</strong> ${state.session.uuid}</p>
+        `;
+      }
+
+      function renderAddressList(items) {
+        const list = document.getElementById("addressList");
+        list.innerHTML = "";
+        items.forEach((item, i) => {
+          const id = `addr-${i}`;
+          const row = document.createElement("label");
+          row.innerHTML = `<input type="radio" name="addressPick" id="${id}" ${i === 0 ? "checked" : ""}/> ${item.full} (${item.addressCode})`;
+          row.querySelector("input").addEventListener("change", () => {
+            state.selectedAddress = item;
+          });
+          list.appendChild(row);
+        });
+        state.selectedAddress = items[0] || null;
+      }
+
+      async function runSearch() {
+        const zip = document.getElementById("zipCode").value.trim();
+        state.searchResult = await api.searchAddress(zip);
+        renderAddressList(state.searchResult.addresses);
+        log("Step1 searchAddress", state.searchResult);
+      }
+
+      async function runNormalize() {
+        const payload = {
+          buildingKind: document.getElementById("buildingKind").value,
+          orderZip: document.getElementById("zipCode").value.trim(),
+          inUseServiceType: document.getElementById("inUseServiceType").value,
+          orderAddress1: state.selectedAddress?.full || "",
+          orderAddress2: ""
+        };
+        state.normalizeResult = await api.normalizeAddress(payload);
+        log("Step2 normalizeAddress", state.normalizeResult);
+      }
+
+      async function runDetail() {
+        if (!state.selectedAddress) throw { code: "E_PRECHECK", message: "address not selected" };
+        const payload = {
+          requestKbn: "1",
+          latitude: state.selectedAddress.lat,
+          longitude: state.selectedAddress.lon,
+          addressCode: state.selectedAddress.addressCode
+        };
+        state.detailResult = await api.detailAddressSearch(payload);
+        log("Step3 detailAddressSearch", state.detailResult);
+      }
+
+      async function runAvailability() {
+        if (!state.selectedAddress) throw { code: "E_PRECHECK", message: "address not selected" };
+        const base = {
+          businessType: "01",
+          channel: "web",
+          reqServiceAreaAcquisition: {
+            nttapiCollaborationResult: true,
+            placeAddress: {
+              housingType: document.getElementById("housingType").value,
+              addressCode: state.selectedAddress.addressCode
+            }
+          }
+        };
+        try {
+          state.availabilityResult = await api.serviceAreaCheck(base);
+          log("Step4 serviceAreaCheck", state.availabilityResult);
+        } catch (err) {
+          if (err.code === "NTT_TEMP_ERROR") {
+            const retry = JSON.parse(JSON.stringify(base));
+            retry.reqServiceAreaAcquisition.nttapiCollaborationResult = false;
+            state.availabilityResult = await api.serviceAreaCheck(retry);
+            log("Step4 serviceAreaCheck (retry fallback)", state.availabilityResult);
+            return;
+          }
+          throw err;
+        }
+      }
+
+      async function safeRun(fn) {
+        try {
+          await fn();
+        } catch (err) {
+          log("ERROR", err);
+        }
+      }
+
+      document.getElementById("runSearch").addEventListener("click", () => safeRun(runSearch));
+      document.getElementById("runNormalize").addEventListener("click", () => safeRun(runNormalize));
+      document.getElementById("runDetail").addEventListener("click", () => safeRun(runDetail));
+      document.getElementById("runAvailability").addEventListener("click", () => safeRun(runAvailability));
+      document.getElementById("runAll").addEventListener("click", () => safeRun(async () => {
+        await runSearch();
+        await runNormalize();
+        await runDetail();
+        await runAvailability();
+      }));
+
+      renderSession();
+    </script>
   </body>
 </html>
