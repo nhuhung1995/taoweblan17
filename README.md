@@ -31,6 +31,14 @@ Luu y:
 - Phan `Search Address` da khong con hardcode zip.
 - Cac buoc sau van la skeleton de mo phong flow.
 
+Cap nhat moi:
+
+- `banchi` va `gou` da lay live tu SB qua `detailAddressSearch`:
+  - `requestKbn=1` -> `addressBanchiList`
+  - `requestKbn=2` -> `addressGoList`
+- Neu live fail thi tu dong fallback noi bo.
+- Rieng list ten toa nha live qua nhanh `nttAddressSearch` hien gap `ASB0143` khi goi tu ngoai context UI SB, nen dang fallback noi bo.
+
 ## Che do su dung de tranh phu thuoc SB
 
 - `Internal Snapshot` (mac dinh):

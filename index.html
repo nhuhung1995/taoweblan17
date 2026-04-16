@@ -237,6 +237,16 @@
           if (!response.ok) throw json;
           return json;
         },
+        async sbDetailAddress(payload) {
+          const response = await fetch("/api/sb/detail-address", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          const json = await response.json();
+          if (!response.ok) throw json;
+          return json;
+        },
         async detailAddressSearch(payload) {
           await sleep(120);
           const response = await fetch("/api/internal/detail", {
@@ -359,17 +369,18 @@
 
         candidates.forEach((b, i) => {
           const id = `banchi-${i}`;
-          const goText = (b.go || []).length ? ` / go: ${b.go.join(", ")}` : "";
+          const value = typeof b === "string" ? b : b.value;
           const row = document.createElement("label");
-          row.innerHTML = `<input type="radio" name="banchiPick" id="${id}" ${i === 0 ? "checked" : ""}/> ${b.value}${goText}`;
+          row.innerHTML = `<input type="radio" name="banchiPick" id="${id}" ${i === 0 ? "checked" : ""}/> ${value}`;
           row.querySelector("input").addEventListener("change", () => {
-            state.selectedBanchi = b;
-            renderGoSelect(b.go || []);
+            state.selectedBanchi = { value };
+            safeRun(loadGoFromSelectedBanchi);
           });
           list.appendChild(row);
         });
-        state.selectedBanchi = candidates[0] || null;
-        renderGoSelect((state.selectedBanchi && state.selectedBanchi.go) || []);
+        const first = candidates[0];
+        state.selectedBanchi = first ? { value: (typeof first === "string" ? first : first.value) } : null;
+        safeRun(loadGoFromSelectedBanchi);
       }
 
       function renderGoSelect(goCandidates) {
@@ -417,9 +428,59 @@
 
       async function loadBanchiFromSelected() {
         if (!state.selectedAddress || !state.selectedAddress.addressCode) return;
+        const individualCode = state.session?.individualCode;
+        if (!individualCode) throw { code: "E_PRECHECK", message: "session not initialized" };
+
+        try {
+          const live = await api.sbDetailAddress({
+            individualCode,
+            requestKbn: "1",
+            addressCode: state.selectedAddress.addressCode,
+            choume: state.selectedAddress.chome
+          });
+          state.banchiResult = {
+            source: "live",
+            addressCode: state.selectedAddress.addressCode,
+            banchiCandidates: live.addressBanchiList || []
+          };
+          renderBanchiList(state.banchiResult.banchiCandidates || []);
+          log("Step1.5 banchiByAddressCode (live)", state.banchiResult);
+          return;
+        } catch (err) {
+          log("WARN", { message: "live banchi failed, fallback internal", err });
+        }
+
         state.banchiResult = await api.banchiByAddressCode(state.selectedAddress.addressCode);
+        state.banchiResult.source = "internal";
         renderBanchiList(state.banchiResult.banchiCandidates || []);
-        log("Step1.5 banchiByAddressCode", state.banchiResult);
+        log("Step1.5 banchiByAddressCode (internal)", state.banchiResult);
+      }
+
+      async function loadGoFromSelectedBanchi() {
+        if (!state.selectedAddress || !state.selectedBanchi) return;
+        const individualCode = state.session?.individualCode;
+        if (!individualCode) throw { code: "E_PRECHECK", message: "session not initialized" };
+
+        let goCandidates = [];
+        try {
+          const live = await api.sbDetailAddress({
+            individualCode,
+            requestKbn: "2",
+            addressCode: state.selectedAddress.addressCode,
+            choume: state.selectedAddress.chome,
+            banchi: state.selectedBanchi.value
+          });
+          goCandidates = live.addressGoList || [];
+          log("Step1.55 goByBanchi (live)", { banchi: state.selectedBanchi.value, goCandidates });
+        } catch (err) {
+          log("WARN", { message: "live go failed, fallback internal", err });
+          const internal = await api.banchiByAddressCode(state.selectedAddress.addressCode);
+          const found = (internal.banchiCandidates || []).find((x) => (typeof x === "string" ? x : x.value) === state.selectedBanchi.value);
+          goCandidates = found ? (typeof found === "string" ? [] : found.go || []) : [];
+          log("Step1.55 goByBanchi (internal)", { banchi: state.selectedBanchi.value, goCandidates });
+        }
+
+        renderGoSelect(goCandidates);
       }
 
       async function loadBuildingFromSelected() {
