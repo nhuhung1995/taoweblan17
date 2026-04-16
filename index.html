@@ -157,18 +157,7 @@
         availabilityResult: null
       };
 
-      const db = {
-        "1050011": [
-          { full: "東京都 港区 芝公園 1丁目", addressCode: "13103012001", lat: 35.6586, lon: 139.7454 },
-          { full: "東京都 港区 芝公園 2丁目", addressCode: "13103012002", lat: 35.6563, lon: 139.7481 }
-        ],
-        "1500001": [
-          { full: "東京都 渋谷区 神宮前 1丁目", addressCode: "13113001001", lat: 35.6719, lon: 139.7063 }
-        ]
-      };
-
       const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-      const generate = () => crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2);
       const log = (title, data) => {
         const box = document.getElementById("logBox");
         box.textContent = `${title}\n${JSON.stringify(data, null, 2)}\n\n` + box.textContent;
@@ -176,9 +165,25 @@
 
       const api = {
         async searchAddress(zip) {
-          await sleep(250);
           if (!/^\d{7}$/.test(zip)) throw { code: "E00010", message: "zipcode invalid" };
-          return { addresses: db[zip] || [] };
+          const response = await fetch(`/api/sb/search-address?zip=${zip}`);
+          const json = await response.json();
+          if (!response.ok) throw json;
+          const flattened = [];
+          (json.addresses || []).forEach((a) => {
+            const base = `${a.longNm || ""}${a.cityKanjiNm || ""}${a.streetKanjiNm || ""}`;
+            (a.streetInfoList || []).forEach((s) => {
+              flattened.push({
+                full: `${base}${s.addNbrKanjiNm || ""}`,
+                addressCode: s.addressCd || "",
+                pref: a.longNm || "",
+                city: a.cityKanjiNm || "",
+                street: a.streetKanjiNm || "",
+                chome: s.addNbrKanjiNm || ""
+              });
+            });
+          });
+          return { addresses: flattened };
         },
         async normalizeAddress(payload) {
           await sleep(250);
@@ -230,19 +235,47 @@
           `;
           return;
         }
-        state.session = { individualCode, uuid: generate(), token: generate() };
-        document.getElementById("flowCard").style.display = "block";
-        card.innerHTML = `
-          <h2>Session Guard</h2>
-          <p><span class="pill ok">active</span> individualCode + uuid initialized.</p>
-          <p><strong>individualCode:</strong> ${state.session.individualCode}</p>
-          <p><strong>uuid:</strong> ${state.session.uuid}</p>
-        `;
+        card.innerHTML = `<h2>Session Guard</h2><p><span class="pill warn">loading</span> Creating session from SB endpoint...</p>`;
+        fetch("/api/sb/session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ individualCode })
+        })
+          .then(async (res) => {
+            const data = await res.json();
+            if (!res.ok) throw data;
+            const ag = data?.agencyProperty || {};
+            state.session = {
+              individualCode: ag.individualCd || individualCode,
+              uuid: ag.uuid || "",
+              nanoId: ag.nanoId || ""
+            };
+            document.getElementById("flowCard").style.display = "block";
+            card.innerHTML = `
+              <h2>Session Guard</h2>
+              <p><span class="pill ok">active</span> individualCode + uuid initialized by SB API.</p>
+              <p><strong>individualCode:</strong> ${state.session.individualCode}</p>
+              <p><strong>uuid:</strong> ${state.session.uuid}</p>
+            `;
+            log("Session initialized", ag);
+          })
+          .catch((err) => {
+            card.innerHTML = `
+              <h2>Session Guard</h2>
+              <p><span class="pill err">error</span> Failed to initialize session.</p>
+            `;
+            log("Session error", err);
+          });
       }
 
       function renderAddressList(items) {
         const list = document.getElementById("addressList");
         list.innerHTML = "";
+        if (!items.length) {
+          list.innerHTML = `<p><span class="pill warn">empty</span> No address rows returned for this zip.</p>`;
+          state.selectedAddress = null;
+          return;
+        }
         items.forEach((item, i) => {
           const id = `addr-${i}`;
           const row = document.createElement("label");
@@ -278,8 +311,8 @@
         if (!state.selectedAddress) throw { code: "E_PRECHECK", message: "address not selected" };
         const payload = {
           requestKbn: "1",
-          latitude: state.selectedAddress.lat,
-          longitude: state.selectedAddress.lon,
+          latitude: state.selectedAddress.lat ?? 35.0,
+          longitude: state.selectedAddress.lon ?? 139.0,
           addressCode: state.selectedAddress.addressCode
         };
         state.detailResult = await api.detailAddressSearch(payload);
