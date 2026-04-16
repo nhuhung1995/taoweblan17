@@ -14,7 +14,6 @@ Trang demo se cho test skeleton 4 buoc:
 
 1. Search address
 1.5. Chome -> Banchi/Go
-1.6. Gou -> Building list
 2. Normalize
 3. Detail
 4. Availability (co retry fallback)
@@ -37,7 +36,7 @@ Cap nhat moi:
   - `requestKbn=1` -> `addressBanchiList`
   - `requestKbn=2` -> `addressGoList`
 - Neu live fail thi tu dong fallback noi bo.
-- Rieng list ten toa nha live qua nhanh `nttAddressSearch` hien gap `ASB0143` khi goi tu ngoai context UI SB, nen dang fallback noi bo.
+- Tam thoi bo qua buoc ten toa nha, de flow chuan den `GOU`.
 
 ## Che do su dung de tranh phu thuoc SB
 
