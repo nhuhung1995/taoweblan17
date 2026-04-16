@@ -19,7 +19,15 @@ export default async function handler(req, res) {
       body: JSON.stringify({ individualCd: String(individualCode), uuid: "" })
     });
 
-    const data = await upstream.json();
+    const text = await upstream.text();
+    let data = {};
+    if (text) {
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = { raw: text };
+      }
+    }
     res.status(upstream.status).json(data);
   } catch (error) {
     res.status(500).json({ error: "session proxy failed", detail: String(error?.message || error) });

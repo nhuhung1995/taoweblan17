@@ -18,7 +18,15 @@ export default async function handler(req, res) {
       method: "GET",
       headers: { Accept: "application/json, text/plain, */*" }
     });
-    const data = await upstream.json();
+    const text = await upstream.text();
+    let data = {};
+    if (text) {
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = { raw: text };
+      }
+    }
     res.status(upstream.status).json(data);
   } catch (error) {
     res.status(500).json({ error: "search-address proxy failed", detail: String(error?.message || error) });

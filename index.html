@@ -231,7 +231,7 @@
           card.innerHTML = `
             <h2>Access Limited</h2>
             <p><span class="pill err">blocked</span> Missing <code>individualCode</code> in URL.</p>
-            <p>Open with sample: <a href="?individualCode=demo-422sLcGAVUfqK">${location.origin}${location.pathname}?individualCode=demo-422sLcGAVUfqK</a></p>
+            <p>Open with sample: <a href="?individualCode=422sLcGAVUfqK">${location.origin}${location.pathname}?individualCode=422sLcGAVUfqK</a></p>
           `;
           return;
         }
@@ -245,6 +245,9 @@
             const data = await res.json();
             if (!res.ok) throw data;
             const ag = data?.agencyProperty || {};
+            if (!ag.individualCd || !ag.uuid) {
+              throw { error: "invalid individualCode or empty response", response: data };
+            }
             state.session = {
               individualCode: ag.individualCd || individualCode,
               uuid: ag.uuid || "",
@@ -262,7 +265,7 @@
           .catch((err) => {
             card.innerHTML = `
               <h2>Session Guard</h2>
-              <p><span class="pill err">error</span> Failed to initialize session.</p>
+              <p><span class="pill err">error</span> Failed to initialize session (check <code>individualCode</code>).</p>
             `;
             log("Session error", err);
           });

@@ -8,7 +8,7 @@
 
 Mo trang voi query param `individualCode`:
 
-- `/?individualCode=demo-422sLcGAVUfqK`
+- `/?individualCode=422sLcGAVUfqK`
 
 Trang demo se cho test skeleton 4 buoc:
 
