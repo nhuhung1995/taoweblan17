@@ -6,6 +6,25 @@ function normalizeWideDigits(input) {
     .trim();
 }
 
+function buildFallbackBuildings(addressCode, banchi, go) {
+  const bn = normalizeWideDigits(banchi) || "0";
+  const gv = normalizeWideDigits(go) || "0";
+  return [
+    {
+      buldngId: `BLDG-${addressCode}-${bn}-${gv}-A`,
+      buldngNm: `並木 ${bn}-${gv} レジデンス`,
+      buldngKana: `ナミキ ${bn}-${gv} レジデンス`,
+      synthetic: true
+    },
+    {
+      buldngId: `BLDG-${addressCode}-${bn}-${gv}-B`,
+      buldngNm: `グラン ${bn}-${gv}`,
+      buldngKana: `グラン ${bn}-${gv}`,
+      synthetic: true
+    }
+  ];
+}
+
 export default async function handler(req, res) {
   if (req.method !== "GET") {
     res.status(405).json({ error: "Method not allowed" });
@@ -23,13 +42,20 @@ export default async function handler(req, res) {
 
   const keyRaw = `${addressCode}|${banchi}|${go}`;
   const keyNormalized = `${addressCode}|${normalizeWideDigits(banchi)}|${normalizeWideDigits(go)}`;
-  const buildingList = BUILDINGS_BY_LOCATION[keyRaw] || BUILDINGS_BY_LOCATION[keyNormalized] || [];
+  const preset = BUILDINGS_BY_LOCATION[keyRaw] || BUILDINGS_BY_LOCATION[keyNormalized] || [];
+  let buildingList = preset;
+  let source = "preset";
+  if (!buildingList.length) {
+    buildingList = buildFallbackBuildings(addressCode, banchi, go);
+    source = "synthetic";
+  }
 
   res.status(200).json({
     addressCode,
     banchi,
     go,
     buildingList,
+    source,
     snapshotVersion: SNAPSHOT_VERSION
   });
 }
