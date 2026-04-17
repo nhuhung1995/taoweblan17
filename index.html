@@ -247,6 +247,26 @@
           if (!response.ok) throw json;
           return json;
         },
+        async sbNttAddressSearch(payload) {
+          const response = await fetch("/api/sb/ntt-address", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          const json = await response.json();
+          if (!response.ok) throw json;
+          return json;
+        },
+        async sbServiceAreaCheck(payload) {
+          const response = await fetch("/api/sb/service-area-check", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          const json = await response.json();
+          if (!response.ok) throw json;
+          return json;
+        },
         async detailAddressSearch(payload) {
           await sleep(120);
           const response = await fetch("/api/internal/detail", {
@@ -415,7 +435,8 @@
         const address1 = state.selectedAddress?.full || "";
         const banchi = state.selectedBanchi?.value || "";
         const go = state.selectedGo || "";
-        const text = [address1, banchi, go].filter(Boolean).join(" - ");
+        const building = state.selectedBuilding?.name || "";
+        const text = [address1, banchi, go, building].filter(Boolean).join(" - ");
         if (!text) {
           wrap.style.display = "none";
           input.value = "";
@@ -540,14 +561,24 @@
 
       async function runNormalize() {
         const payload = {
+          individualCode: state.session?.individualCode || "",
           buildingKind: document.getElementById("buildingKind").value,
           orderZip: document.getElementById("zipCode").value.trim(),
           inUseServiceType: document.getElementById("inUseServiceType").value,
           orderAddress1: state.selectedAddress?.full || "",
           orderAddress2: state.selectedBanchi?.value || "",
-          orderAddress10: state.selectedGo || ""
+          orderAddress3: state.selectedBuilding?.name || "",
+          orderAddress10: state.selectedGo || "",
+          addressCode: state.selectedAddress?.addressCode || "",
+          addressKbn: "3"
         };
-        state.normalizeResult = await api.normalizeAddress(payload);
+        try {
+          const live = await api.sbNttAddressSearch(payload);
+          state.normalizeResult = { source: "live", ...live };
+        } catch (err) {
+          const internal = await api.normalizeAddress(payload);
+          state.normalizeResult = { source: "internal-fallback", liveError: err, ...internal };
+        }
         log("Step2 normalizeAddress", state.normalizeResult);
       }
 
@@ -566,6 +597,7 @@
       async function runAvailability() {
         if (!state.selectedAddress) throw { code: "E_PRECHECK", message: "address not selected" };
         const base = {
+          individualCode: state.session?.individualCode || "",
           businessType: "01",
           channel: "web",
           reqServiceAreaAcquisition: {
@@ -574,22 +606,33 @@
               housingType: document.getElementById("housingType").value,
               addressCode: state.selectedAddress.addressCode,
               banchiGo1: state.selectedBanchi?.value || "",
-              banchiGo2: state.selectedGo || ""
+              banchiGo2: state.selectedGo || "",
+              buildingId: state.selectedBuilding?.id || "",
+              buildingName: state.selectedBuilding?.name || ""
             }
           }
         };
         try {
-          state.availabilityResult = await api.serviceAreaCheck(base);
+          state.availabilityResult = await api.sbServiceAreaCheck(base);
+          state.availabilityResult = { source: "live", ...state.availabilityResult };
           log("Step4 serviceAreaCheck", state.availabilityResult);
         } catch (err) {
           if (err.code === "NTT_TEMP_ERROR") {
             const retry = JSON.parse(JSON.stringify(base));
             retry.reqServiceAreaAcquisition.nttapiCollaborationResult = false;
-            state.availabilityResult = await api.serviceAreaCheck(retry);
+            try {
+              const liveRetry = await api.sbServiceAreaCheck(retry);
+              state.availabilityResult = { source: "live-retry", ...liveRetry };
+            } catch (retryErr) {
+              const internalRetry = await api.serviceAreaCheck(retry);
+              state.availabilityResult = { source: "internal-fallback", liveError: retryErr, ...internalRetry };
+            }
             log("Step4 serviceAreaCheck (retry fallback)", state.availabilityResult);
             return;
           }
-          throw err;
+          const internal = await api.serviceAreaCheck(base);
+          state.availabilityResult = { source: "internal-fallback", liveError: err, ...internal };
+          log("Step4 serviceAreaCheck (fallback)", state.availabilityResult);
         }
       }
 
@@ -632,12 +675,14 @@
         const selected = e.target.value;
         if (!selected) {
           state.selectedBuilding = null;
+          updateFullAddress();
           return;
         }
         state.selectedBuilding = {
           id: selected,
           name: e.target.options[e.target.selectedIndex]?.textContent || selected
         };
+        updateFullAddress();
       });
       renderSession();
     </script>

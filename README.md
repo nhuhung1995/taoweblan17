@@ -10,7 +10,7 @@ Mo trang voi query param `individualCode`:
 
 - `/?individualCode=422sLcGAVUfqK`
 
-Trang demo se cho test skeleton 4 buoc:
+Trang demo se cho test 4 buoc:
 
 1. Search address
 1.5. Chome -> Banchi/Go
@@ -30,15 +30,18 @@ Luong dang chay:
 1. `search/address` (live)
 2. `detailAddressSearch requestKbn=1` -> banchi (live)
 3. `detailAddressSearch requestKbn=2` -> gou (live)
+4. `detailAddressSearch requestKbn=3` -> building (live, neu co)
+5. `nttAddressSearch` -> normalize (live-first, fallback internal)
+6. `serviceAreaCheck` -> availability (live-first, fallback internal)
 
 Chi tiet:
 
 - `banchi` va `gou` lay live tu SB qua `detailAddressSearch`:
   - `requestKbn=1` -> `addressBanchiList`
   - `requestKbn=2` -> `addressGoList`
-- Tam thoi bo qua buoc ten toa nha, de flow chuan den `GOU`.
+- Da bat buoc flow den `building` neu endpoint tra candidate.
 
 ## Ghi chu
 
-- Ban nay da bo data source switch trong UI, mac dinh live den `GOU`.
-- Cac step normalize/detail/availability o duoi van la skeleton noi bo de test tiep flow.
+- Ban nay da bo data source switch trong UI, uu tien goi live endpoint cua SB.
+- Khi live endpoint loi/chan, UI tu fallback sang `api/internal/*` de giu flow demo.
