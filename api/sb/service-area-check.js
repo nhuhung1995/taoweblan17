@@ -20,9 +20,17 @@ export default async function handler(req, res) {
     }
 
     const ag = await getAgency(individualCode);
+    const sanitizedPlaceAddress = { ...(reqServiceAreaAcquisition?.placeAddress || {}) };
+    delete sanitizedPlaceAddress.buildingId;
+    delete sanitizedPlaceAddress.buildingName;
+
     const payload = {
       ReqBbapiBase: buildReqBbapiBase(ag),
-      ...body
+      ...body,
+      reqServiceAreaAcquisition: {
+        ...reqServiceAreaAcquisition,
+        placeAddress: sanitizedPlaceAddress
+      }
     };
 
     const { status, data } = await proxyToSoftbankJson("/bff/serviceAreaCheck", payload);
