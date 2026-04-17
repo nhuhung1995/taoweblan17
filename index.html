@@ -165,7 +165,7 @@
         </div>
         <div class="row" id="subBuildingSelectWrap" style="display:none;">
           <div class="field">
-            <label>Sub Building</label>
+            <label>Sub Building / Floor</label>
             <select id="subBuildingSelect"></select>
           </div>
         </div>
@@ -527,12 +527,19 @@
         const select = document.getElementById("roomSelect");
         select.innerHTML = "";
         if (!candidates.length) {
-          wrap.style.display = "none";
+          wrap.style.display = "block";
+          select.disabled = true;
+          const opt = document.createElement("option");
+          opt.value = "";
+          opt.textContent = "No room for this floor (try another Sub Building / Floor)";
+          opt.selected = true;
+          select.appendChild(opt);
           state.selectedRoom = "";
           updateFullAddress();
           return;
         }
         wrap.style.display = "block";
+        select.disabled = false;
         candidates.forEach((item, i) => {
           const opt = document.createElement("option");
           opt.value = item.id;
