@@ -7,19 +7,8 @@ export default async function handler(req, res) {
   }
 
   try {
-    const {
-      individualCode,
-      buildingKind,
-      orderZip,
-      inUseServiceType,
-      orderAddress1,
-      orderAddress2,
-      orderAddress3,
-      orderAddress4,
-      orderAddress10,
-      addressCode,
-      addressKbn
-    } = req.body || {};
+    const { individualCode, ...input } = req.body || {};
+    const { buildingKind, orderZip, inUseServiceType } = input;
 
     if (!individualCode || !buildingKind || !orderZip || !inUseServiceType) {
       res.status(400).json({ error: "individualCode, buildingKind, orderZip, inUseServiceType are required" });
@@ -29,16 +18,10 @@ export default async function handler(req, res) {
     const ag = await getAgency(individualCode);
     const payload = {
       ReqBbapiBase: buildReqBbapiBase(ag),
+      ...input,
       buildingKind: String(buildingKind),
       orderZip: String(orderZip),
-      inUseServiceType: String(inUseServiceType),
-      orderAddress1: orderAddress1 ?? "",
-      orderAddress2: orderAddress2 ?? "",
-      orderAddress3: orderAddress3 ?? "",
-      orderAddress4: orderAddress4 ?? "",
-      orderAddress10: orderAddress10 ?? "",
-      addressCode: addressCode ?? undefined,
-      addressKbn: addressKbn ?? undefined
+      inUseServiceType: String(inUseServiceType)
     };
 
     const { status, data } = await proxyToSoftbankJson("/bff/nttAddressSearch", payload);
