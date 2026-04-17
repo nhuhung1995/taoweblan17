@@ -30,7 +30,7 @@ Luong dang chay:
 1. `search/address` (live)
 2. `detailAddressSearch requestKbn=1` -> banchi (live)
 3. `detailAddressSearch requestKbn=2` -> gou (live)
-4. `detailAddressSearch requestKbn=3` -> building (live, neu co)
+4. `nttAddressSearch addressKbn=8/9/10` -> building/sub-building/room (live)
 5. `nttAddressSearch` -> normalize (live-first, fallback internal)
 6. `serviceAreaCheck` -> availability (live-first, fallback internal)
 
@@ -39,7 +39,7 @@ Chi tiet:
 - `banchi` va `gou` lay live tu SB qua `detailAddressSearch`:
   - `requestKbn=1` -> `addressBanchiList`
   - `requestKbn=2` -> `addressGoList`
-- Da bat buoc flow den `building` neu endpoint tra candidate.
+- Da map theo flow moi: `building -> sub-building -> room`.
 
 ## Ghi chu
 
