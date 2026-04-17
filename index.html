@@ -157,6 +157,12 @@
             <select id="goSelect"></select>
           </div>
         </div>
+        <div class="row" id="subGoSelectWrap" style="display:none;">
+          <div class="field">
+            <label>Sub Go</label>
+            <select id="subGoSelect"></select>
+          </div>
+        </div>
         <div class="row" id="buildingSelectWrap" style="display:none;">
           <div class="field">
             <label>Building</label>
@@ -200,6 +206,7 @@
         selectedAddress: null,
         selectedBanchi: null,
         selectedGo: "",
+        selectedSubGo: "",
         selectedBuilding: null,
         selectedSubBuilding: null,
         selectedRoom: null,
@@ -213,7 +220,6 @@
         availabilityResult: null
       };
 
-      const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
       const log = (title, data) => {
         const box = document.getElementById("logBox");
         box.textContent = `${title}\n${JSON.stringify(data, null, 2)}\n\n` + box.textContent;
@@ -241,17 +247,6 @@
             });
           });
           return { addresses: flattened };
-        },
-        async normalizeAddress(payload) {
-          await sleep(120);
-          const response = await fetch("/api/internal/normalize", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-          });
-          const json = await response.json();
-          if (!response.ok) throw json;
-          return json;
         },
         async sbDetailAddress(payload) {
           const response = await fetch("/api/sb/detail-address", {
@@ -283,27 +278,6 @@
           if (!response.ok) throw json;
           return json;
         },
-        async detailAddressSearch(payload) {
-          await sleep(120);
-          const response = await fetch("/api/internal/detail", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-          });
-          const json = await response.json();
-          if (!response.ok) throw json;
-          return json;
-        },
-        async serviceAreaCheck(payload) {
-          await sleep(120);
-          const response = await fetch("/api/internal/availability", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-          });
-          const json = await response.json();
-          if (!response.ok) throw json;
-          return json;
         }
       };
 
@@ -361,6 +335,8 @@
         document.getElementById("banchiSelect").innerHTML = "";
         document.getElementById("goSelectWrap").style.display = "none";
         document.getElementById("goSelect").innerHTML = "";
+        document.getElementById("subGoSelectWrap").style.display = "none";
+        document.getElementById("subGoSelect").innerHTML = "";
         document.getElementById("fullAddressWrap").style.display = "none";
         document.getElementById("fullAddressText").value = "";
         resetBuildingUi();
@@ -372,6 +348,7 @@
           state.selectedAddress = null;
           state.selectedBanchi = null;
           state.selectedGo = "";
+          state.selectedSubGo = "";
           state.selectedBuilding = null;
           state.selectedSubBuilding = null;
           state.selectedRoom = null;
@@ -398,6 +375,7 @@
           banchiSelect.appendChild(opt);
           state.selectedBanchi = null;
           state.selectedGo = "";
+          state.selectedSubGo = "";
           updateFullAddress();
           return;
         }
@@ -422,6 +400,7 @@
         if (!goCandidates.length) {
           wrap.style.display = "none";
           state.selectedGo = "";
+          state.selectedSubGo = "";
           updateFullAddress();
           resetBuildingUi();
           return;
@@ -435,8 +414,31 @@
           select.appendChild(opt);
         });
         state.selectedGo = goCandidates[0];
+        state.selectedSubGo = "";
         updateFullAddress();
-        safeRun(loadBuildingFromSelectedGo);
+        safeRun(loadSubGoFromSelectedGo);
+      }
+
+      function renderSubGoSelect(subGoCandidates) {
+        const wrap = document.getElementById("subGoSelectWrap");
+        const select = document.getElementById("subGoSelect");
+        select.innerHTML = "";
+        if (!subGoCandidates.length) {
+          wrap.style.display = "none";
+          state.selectedSubGo = "";
+          updateFullAddress();
+          return;
+        }
+        wrap.style.display = "block";
+        subGoCandidates.forEach((g, i) => {
+          const opt = document.createElement("option");
+          opt.value = g;
+          opt.textContent = g;
+          if (i === 0) opt.selected = true;
+          select.appendChild(opt);
+        });
+        state.selectedSubGo = subGoCandidates[0];
+        updateFullAddress();
       }
 
       function updateFullAddress() {
@@ -445,10 +447,11 @@
         const address1 = state.selectedAddress?.full || "";
         const banchi = state.selectedBanchi?.value || "";
         const go = state.selectedGo || "";
+        const subGo = state.selectedSubGo || "";
         const building = state.selectedBuilding?.name || "";
         const subBuilding = state.selectedSubBuilding?.name || "";
         const room = state.selectedRoom || "";
-        const text = [address1, banchi, go, building, subBuilding, room].filter(Boolean).join(" - ");
+        const text = [address1, banchi, go, subGo, building, subBuilding, room].filter(Boolean).join(" - ");
         if (!text) {
           wrap.style.display = "none";
           input.value = "";
@@ -461,12 +464,15 @@
       function resetBuildingUi() {
         document.getElementById("buildingSelectWrap").style.display = "none";
         document.getElementById("buildingSelect").innerHTML = "";
+        document.getElementById("subGoSelectWrap").style.display = "none";
+        document.getElementById("subGoSelect").innerHTML = "";
         document.getElementById("subBuildingSelectWrap").style.display = "none";
         document.getElementById("subBuildingSelect").innerHTML = "";
         document.getElementById("roomSelectWrap").style.display = "none";
         document.getElementById("roomSelect").innerHTML = "";
         document.getElementById("buildingFailWrap").style.display = "none";
         state.selectedBuilding = null;
+        state.selectedSubGo = "";
         state.selectedSubBuilding = null;
         state.selectedRoom = null;
         state.nttRoomBaseResponse = null;
@@ -594,7 +600,7 @@
           orderAddress4: state.selectedAddress?.chome || "住所なし",
           orderAddress5: toFullWidthDigits(state.selectedBanchi?.value || "") || "住所なし",
           orderAddress6: toFullWidthDigits(state.selectedGo || "") || "住所なし",
-          orderAddress7: "住所なし",
+          orderAddress7: state.selectedSubGo || "住所なし",
           orderAddress8: state.selectedBuilding?.name || "住所なし",
           orderAddress9: state.selectedSubBuilding?.name || "住所なし",
           inUseServiceType: document.getElementById("inUseServiceType").value
@@ -643,22 +649,38 @@
         if (!state.selectedAddress || !state.selectedBanchi || !state.selectedGo) return;
         resetBuildingUi();
         try {
-          const live = await api.sbNttAddressSearch(buildNttAddressPayload("8"));
-          mergeNttAddressResult(live);
-          const buildingCandidates = normalizeAddressItems(live?.orderAddressList);
-          state.buildingResult = { source: "live-ntt-kbn8", buildingCandidates, raw: live };
-          log("Step1.56 buildingByGo (live)", state.buildingResult);
-          if (!buildingCandidates.length) {
-            renderBuilding([], { isError: false });
-            return;
+          const live7 = await api.sbNttAddressSearch(buildNttAddressPayload("7"));
+          mergeNttAddressResult(live7);
+          const subGoCandidates = normalizeAddressItems(live7?.orderAddressList).map((x) => x.name);
+          log("Step1.555 subGoByGo (live)", { subGoCandidates, raw: live7 });
+          renderSubGoSelect(subGoCandidates);
+          await loadBuildingBySelectedSubGo();
+        } catch (err7) {
+          log("Step1.555 subGoByGo (live fail -> continue)", err7);
+          state.selectedSubGo = "";
+          renderSubGoSelect([]);
+          try {
+            await loadBuildingBySelectedSubGo();
+          } catch (err8) {
+            state.buildingResult = { source: "live", buildingCandidates: [], error: err8 };
+            log("Step1.56 buildingByGo (live fail)", state.buildingResult);
+            renderBuilding([], { isError: true });
           }
-          renderBuilding(buildingCandidates, { isError: false });
-          safeRun(loadSubBuildingFromSelectedBuilding);
-        } catch (err) {
-          state.buildingResult = { source: "live", buildingCandidates: [], error: err };
-          log("Step1.56 buildingByGo (live fail)", state.buildingResult);
-          renderBuilding([], { isError: true });
         }
+      }
+
+      async function loadBuildingBySelectedSubGo() {
+        const live = await api.sbNttAddressSearch(buildNttAddressPayload("8"));
+        mergeNttAddressResult(live);
+        const buildingCandidates = normalizeAddressItems(live?.orderAddressList);
+        state.buildingResult = { source: "live-ntt-kbn8", buildingCandidates, raw: live };
+        log("Step1.56 buildingByGo (live)", state.buildingResult);
+        if (!buildingCandidates.length) {
+          renderBuilding([], { isError: false });
+          return;
+        }
+        renderBuilding(buildingCandidates, { isError: false });
+        safeRun(loadSubBuildingFromSelectedBuilding);
       }
 
       async function loadSubBuildingFromSelectedBuilding() {
@@ -753,25 +775,27 @@
           orderAddress9: state.selectedSubBuilding?.name || "",
           orderAddress10: state.selectedRoom || ""
         };
-        try {
-          const live = await api.sbNttAddressSearch(payload);
-          state.normalizeResult = { source: "live", ...live };
-        } catch (err) {
-          const internal = await api.normalizeAddress(payload);
-          state.normalizeResult = { source: "internal-fallback", liveError: err, ...internal };
-        }
+        const live = await api.sbNttAddressSearch(payload);
+        state.normalizeResult = { source: "live", ...live };
         log("Step2 normalizeAddress", state.normalizeResult);
       }
 
       async function runDetail() {
         if (!state.selectedAddress) throw { code: "E_PRECHECK", message: "address not selected" };
+        const individualCode = state.session?.individualCode;
+        if (!individualCode) throw { code: "E_PRECHECK", message: "session not initialized" };
+        const banchi = toFullWidthDigits(state.selectedBanchi?.value || "");
+        const go = toFullWidthDigits(state.selectedGo || "");
         const payload = {
-          requestKbn: "1",
-          latitude: state.selectedAddress.lat ?? 35.0,
-          longitude: state.selectedAddress.lon ?? 139.0,
-          addressCode: state.selectedAddress.addressCode
+          individualCode,
+          requestKbn: "3",
+          addressCode: state.selectedAddress.addressCode,
+          choume: state.selectedAddress.chome || "",
+          banchi,
+          go
         };
-        state.detailResult = await api.detailAddressSearch(payload);
+        const live = await api.sbDetailAddress(payload);
+        state.detailResult = { source: "live", ...live, nttAddressResult: state.nttAddressResult || null };
         log("Step3 detailAddressSearch", state.detailResult);
       }
 
@@ -800,7 +824,7 @@
               azaChome: state.selectedAddress?.chome || "",
               banchiGo1: banchi,
               banchiGo2: go,
-              banchiGo3: state.selectedRoom || "",
+              banchiGo3: state.selectedSubGo || "",
               buildingName1: state.selectedBuilding?.name || "",
               buildingName2: state.selectedSubBuilding?.name || "",
               buildingName3: state.selectedRoom || ""
@@ -820,19 +844,12 @@
           if (err.code === "NTT_TEMP_ERROR") {
             const retry = JSON.parse(JSON.stringify(base));
             retry.reqServiceAreaAcquisition.nttapiCollaborationResult = false;
-            try {
-              const liveRetry = await api.sbServiceAreaCheck(retry);
-              state.availabilityResult = { source: "live-retry", ...liveRetry };
-            } catch (retryErr) {
-              const internalRetry = await api.serviceAreaCheck(retry);
-              state.availabilityResult = { source: "internal-fallback", liveError: retryErr, ...internalRetry };
-            }
+            const liveRetry = await api.sbServiceAreaCheck(retry);
+            state.availabilityResult = { source: "live-retry", ...liveRetry };
             log("Step4 serviceAreaCheck (retry fallback)", state.availabilityResult);
             return;
           }
-          const internal = await api.serviceAreaCheck(base);
-          state.availabilityResult = { source: "internal-fallback", liveError: err, ...internal };
-          log("Step4 serviceAreaCheck (fallback)", state.availabilityResult);
+          throw err;
         }
       }
 
@@ -856,8 +873,14 @@
       }));
       document.getElementById("goSelect").addEventListener("change", (e) => {
         state.selectedGo = e.target.value;
+        state.selectedSubGo = "";
         updateFullAddress();
         safeRun(loadBuildingFromSelectedGo);
+      });
+      document.getElementById("subGoSelect").addEventListener("change", (e) => {
+        state.selectedSubGo = e.target.value || "";
+        updateFullAddress();
+        safeRun(loadBuildingBySelectedSubGo);
       });
       document.getElementById("chomeSelect").addEventListener("change", (e) => {
         const idx = Number(e.target.value);

@@ -30,7 +30,7 @@ Luong dang chay:
 1. `search/address` (live)
 2. `detailAddressSearch requestKbn=1` -> banchi (live)
 3. `detailAddressSearch requestKbn=2` -> gou (live)
-4. `nttAddressSearch addressKbn=8/9/10` -> building/sub-building/room (live)
+4. `nttAddressSearch addressKbn=7/8/9/10` -> sub-go/building/sub-building/room (live)
 5. `nttAddressSearch` -> normalize (live-first, fallback internal)
 6. `serviceAreaCheck` -> availability (live-first, fallback internal)
 
@@ -43,5 +43,5 @@ Chi tiet:
 
 ## Ghi chu
 
-- Ban nay da bo data source switch trong UI, uu tien goi live endpoint cua SB.
-- Khi live endpoint loi/chan, UI tu fallback sang `api/internal/*` de giu flow demo.
+- Ban nay da bo data source switch trong UI, chi goi live endpoint cua SB.
+- Neu live endpoint loi, UI hien loi tu SB (khong fallback qua `api/internal/*`).
